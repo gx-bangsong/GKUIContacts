@@ -20,6 +20,18 @@ license {
     ],
 }
 
+// The subset of the app sources that carries no android.* dependency and can therefore be
+// compiled and tested on a host JVM by //packages/apps/Contacts/tests-unit.
+//
+// Only add files here that are free of Android imports; a file that starts importing android.*
+// must be removed from this list or the host test build will break.
+filegroup {
+    name: "contacts-pure-java-srcs",
+    srcs: [
+        "src/com/android/contacts/pinyin/ChineseSurnameTable.java",
+    ],
+}
+
 android_app {
     name: "Contacts",
 
