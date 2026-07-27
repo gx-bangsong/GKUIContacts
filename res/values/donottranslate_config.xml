@@ -69,6 +69,16 @@
     <!-- The filename that is suggested that users use when exporting vCards. Should include the .vcf extension. -->
     <string name="exporting_vcard_filename" translatable="false">contacts.vcf</string>
 
+    <!-- If true, contacts are re-indexed by Chinese surname pronunciation so that polyphonic
+         surnames (单 Shan, 解 Xie, 曾 Zeng ...) and compound surnames (欧阳, 万俟 Moqi ...) land
+         in the correct fast-scroll bucket instead of the one the provider's generic pinyin
+         transliteration would pick. Set to false to keep the stock provider ordering. -->
+    <bool name="config_surname_index_enabled">true</bool>
+
+    <!-- If true, a horizontally scrolling row of group (label) chips is shown between the search
+         bar and the contact list. The row hides itself automatically when no groups exist. -->
+    <bool name="config_show_group_chips">true</bool>
+
     <!-- Flag indicating whether Contacts app is allowed to export contacts -->
     <bool name="config_allow_export">true</bool>
 
