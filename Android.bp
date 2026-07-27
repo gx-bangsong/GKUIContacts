@@ -28,6 +28,7 @@ license {
 filegroup {
     name: "contacts-pure-java-srcs",
     srcs: [
+        "src/com/android/contacts/group/GroupChipFilter.java",
         "src/com/android/contacts/pinyin/ChineseSurnameTable.java",
         "src/com/android/contacts/pinyin/PinyinFallback.java",
         "src/com/android/contacts/pinyin/SurnameIndexBuilder.java",

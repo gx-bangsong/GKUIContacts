@@ -382,4 +382,14 @@
     <!-- Side padding within the navigation drawer -->
     <dimen name="drawer_label_header_end_padding">24dp</dimen>
 
+    <!-- Group (label) chips bar -->
+    <dimen name="group_chips_bar_horizontal_padding">16dp</dimen>
+    <dimen name="group_chips_bar_vertical_padding">4dp</dimen>
+    <dimen name="group_chip_spacing">8dp</dimen>
+    <dimen name="group_chip_min_height">32dp</dimen>
+    <!-- MD3 chips use a small corner radius rather than a fully rounded pill. -->
+    <dimen name="group_chip_corner_radius">8dp</dimen>
+    <dimen name="group_chip_stroke_width">1dp</dimen>
+    <dimen name="group_chip_text_size">14sp</dimen>
+
 </resources>

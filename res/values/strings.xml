@@ -1555,4 +1555,16 @@
     <!-- The label to display as a section header in the contact list for an SDN directory [CHAR LIMIT=40] -->
     <string name="sdn_contacts_directory_search_label">Carrier service numbers</string>
 
+    <!-- Label of the chip that clears the group filter and shows every contact [CHAR LIMIT=20] -->
+    <string name="group_chip_all">All</string>
+
+    <!-- Content description of the row of group filter chips above the contact list [CHAR LIMIT=NONE] -->
+    <string name="group_chips_bar_description">Filter contacts by label</string>
+
+    <!-- Spoken when a group filter chip is selected [CHAR LIMIT=NONE] -->
+    <string name="group_chip_selected_announcement">Showing <xliff:g id="label" example="Family">^1</xliff:g></string>
+
+    <!-- Spoken when the group filter is cleared [CHAR LIMIT=NONE] -->
+    <string name="group_chip_all_selected_announcement">Showing all contacts</string>
+
 </resources>

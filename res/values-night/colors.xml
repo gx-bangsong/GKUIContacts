@@ -15,4 +15,12 @@
     <color name="contact_all_list_background_color">@*android:color/system_neutral1_900</color>
 
     <color name="fab_color">@android:color/system_accent1_100</color>
+
+    <!-- Group (label) chips bar, dark theme. Mirrors the MD3 dark secondaryContainer /
+         onSecondaryContainer relationship: a darker fill with a light label. -->
+    <color name="group_chip_container_selected">@*android:color/system_accent2_700</color>
+    <color name="group_chip_on_container_selected">@*android:color/system_accent1_100</color>
+    <color name="group_chip_on_container_unselected">#dadada</color>
+    <color name="group_chip_outline">@*android:color/system_neutral2_500</color>
+    <color name="group_chip_ripple">#33FFFFFF</color>
 </resources>

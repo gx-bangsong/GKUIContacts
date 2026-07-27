@@ -64,6 +64,8 @@ import com.android.contacts.R;
 import com.android.contacts.activities.ActionBarAdapter;
 import com.android.contacts.activities.PeopleActivity;
 import com.android.contacts.compat.CompatUtils;
+import com.android.contacts.group.GroupChipFilter;
+import com.android.contacts.group.GroupChipsController;
 import com.android.contacts.interactions.ContactDeletionInteraction;
 import com.android.contacts.interactions.ContactMultiDeletionInteraction;
 import com.android.contacts.interactions.ContactMultiDeletionInteraction.MultiContactDeleteListener;
@@ -74,6 +76,7 @@ import com.android.contacts.logging.ScreenEvent;
 import com.android.contacts.model.AccountTypeManager;
 import com.android.contacts.model.account.AccountInfo;
 import com.android.contacts.model.account.AccountWithDataSet;
+import com.android.contacts.pinyin.SurnameIndexFeature;
 import com.android.contacts.preference.ContactsPreferences;
 import com.android.contacts.quickcontact.QuickContactActivity;
 import com.android.contacts.util.AccountFilterUtil;
@@ -102,6 +105,7 @@ public class DefaultContactBrowseListFragment extends ContactBrowseListFragment
     private static final String ENABLE_DEBUG_OPTIONS_HIDDEN_CODE = "debug debug!";
     private static final String KEY_DELETION_IN_PROGRESS = "deletionInProgress";
     private static final String KEY_SEARCH_RESULT_CLICKED = "search_result_clicked";
+    private static final String KEY_GROUP_CHIP_FILTER_ID = "groupChipFilterId";
 
     private static final int ACTIVITY_REQUEST_CODE_SHARE = 0;
 
@@ -158,6 +162,11 @@ public class DefaultContactBrowseListFragment extends ContactBrowseListFragment
     private boolean mDisableOptionItemSelected;
 
     private boolean mSearchResultClicked;
+
+    /** Null when the chips bar is disabled or absent from the layout. */
+    private GroupChipsController mGroupChipsController;
+    /** Survives the gap between onCreate restoring state and the bar being created. */
+    private long mPendingGroupChipFilterId = GroupChipFilter.ALL_GROUPS;
 
     private ActionBarAdapter mActionBarAdapter;
     private PeopleActivity mActivity;
@@ -497,6 +506,10 @@ public class DefaultContactBrowseListFragment extends ContactBrowseListFragment
     public void onCreate(Bundle savedState) {
         super.onCreate(savedState);
         mIsRecreatedInstance = (savedState != null);
+        if (savedState != null) {
+            mPendingGroupChipFilterId = savedState.getLong(
+                    KEY_GROUP_CHIP_FILTER_ID, GroupChipFilter.ALL_GROUPS);
+        }
         mContactListFilterController = ContactListFilterController.getInstance(getContext());
         mContactListFilterController.addListener(this);
         mContactListFilterController.checkFilterValidity(false);
@@ -546,6 +559,57 @@ public class DefaultContactBrowseListFragment extends ContactBrowseListFragment
                 });
 
         mAlertContainer.setVisibility(View.GONE);
+
+        initGroupChips();
+    }
+
+    /**
+     * Sets up the group (label) chips bar shown between the search bar and the list.
+     *
+     * <p>No-op when the deployment has disabled the bar, or in layouts that do not include it
+     * (contact pickers reuse this fragment's superclass but a different layout).
+     */
+    private void initGroupChips() {
+        if (!SurnameIndexFeature.isGroupChipsEnabled(getContext())) {
+            return;
+        }
+        final GroupChipsController controller =
+                new GroupChipsController(getContext(), mView, mGroupChipListener);
+        if (!controller.isAttached()) {
+            return;
+        }
+        mGroupChipsController = controller;
+        if (mPendingGroupChipFilterId != GroupChipFilter.ALL_GROUPS) {
+            mGroupChipsController.restoreSelection(mPendingGroupChipFilterId);
+            applyGroupChipFilter(mPendingGroupChipFilterId, /* reload */ false);
+        }
+    }
+
+    private final GroupChipsController.OnGroupChipSelectedListener mGroupChipListener =
+            new GroupChipsController.OnGroupChipSelectedListener() {
+                @Override
+                public void onGroupChipSelected(long groupId) {
+                    applyGroupChipFilter(groupId, /* reload */ true);
+                }
+            };
+
+    /**
+     * Pushes the selected label down to the adapter and optionally reloads.
+     *
+     * <p>Deliberately independent of {@link ContactListFilter}: account filters and label chips are
+     * orthogonal, and users expect "Work account" and "Family label" to compose rather than one
+     * replacing the other.
+     */
+    private void applyGroupChipFilter(long groupId, boolean reload) {
+        mPendingGroupChipFilterId = groupId;
+        final ContactEntryListAdapter adapter = getAdapter();
+        if (!(adapter instanceof DefaultContactListAdapter)) {
+            return;
+        }
+        ((DefaultContactListAdapter) adapter).setGroupChipFilter(groupId);
+        if (reload) {
+            reloadData();
+        }
     }
 
     private void turnSyncOn() {
@@ -711,6 +775,10 @@ public class DefaultContactBrowseListFragment extends ContactBrowseListFragment
                 deleteSelectedContacts();
             }
             mSearchResultClicked = savedInstanceState.getBoolean(KEY_SEARCH_RESULT_CLICKED);
+        }
+
+        if (mGroupChipsController != null) {
+            mGroupChipsController.initLoader(getLoaderManager());
         }
 
         setDirectorySearchMode();
@@ -1294,6 +1362,9 @@ public class DefaultContactBrowseListFragment extends ContactBrowseListFragment
         mDisableOptionItemSelected = true;
         outState.putBoolean(KEY_DELETION_IN_PROGRESS, mIsDeletionInProgress);
         outState.putBoolean(KEY_SEARCH_RESULT_CLICKED, mSearchResultClicked);
+        outState.putLong(KEY_GROUP_CHIP_FILTER_ID, mGroupChipsController == null
+                ? mPendingGroupChipFilterId
+                : mGroupChipsController.getSelectedGroupId());
     }
 
     @Override

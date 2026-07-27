@@ -63,6 +63,10 @@
          - paddingTop should be here to show "shade" effect correctly. -->
     <include layout="@layout/account_filter_header" />
 
+    <!-- Group (label) filter chips, between the search bar and the list.
+         Starts GONE; GroupChipsController shows it once labels have loaded. -->
+    <include layout="@layout/group_chips_bar" />
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dip"
