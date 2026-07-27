@@ -1567,4 +1567,11 @@
     <!-- Spoken when the group filter is cleared [CHAR LIMIT=NONE] -->
     <string name="group_chip_all_selected_announcement">Showing all contacts</string>
 
+
+    <!-- Content description of the alphabetical fast-scroll bar beside the contact list [CHAR LIMIT=NONE] -->
+    <string name="surname_index_bar_description">Alphabetical index</string>
+
+    <!-- Spoken description of the current position in the fast-scroll bar [CHAR LIMIT=NONE] -->
+    <string name="surname_index_bar_position_description"><xliff:g id="letter" example="S">^1</xliff:g>, <xliff:g id="position" example="3">^2</xliff:g> of <xliff:g id="total" example="27">^3</xliff:g></string>
+
 </resources>

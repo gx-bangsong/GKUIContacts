@@ -125,12 +125,34 @@ public final class SurnameSortedCursor extends CursorWrapper {
         }
     }
 
+    /**
+     * Extra carrying the surname hints for the fast-scroll bubble: one entry per address-book
+     * index section, holding up to {@link SurnameIndexBuilder#MAX_SURNAME_HINTS} surnames joined
+     * by {@link #SURNAME_HINT_SEPARATOR}, or an empty string for sections with no Chinese
+     * surnames.
+     *
+     * <p>Travels in the cursor extras rather than on this object because the adapter sees a
+     * {@code MergeCursor} wrapping this one, and {@code MergeCursor.getExtras()} is the only
+     * channel that survives the merge.
+     */
+    public static final String EXTRA_SURNAME_HINTS =
+            "com.android.contacts.extra.SURNAME_HINTS";
+
+    /** Separator between surnames within one {@link #EXTRA_SURNAME_HINTS} entry. */
+    public static final String SURNAME_HINT_SEPARATOR = "\u00b7";
+
     private static Bundle buildExtras(Bundle original, SurnameIndexBuilder.Result index) {
         final Bundle extras = original == null || original == Bundle.EMPTY
                 ? new Bundle()
                 : new Bundle(original);
         extras.putStringArray(Contacts.EXTRA_ADDRESS_BOOK_INDEX_TITLES, index.sections);
         extras.putIntArray(Contacts.EXTRA_ADDRESS_BOOK_INDEX_COUNTS, index.counts);
+
+        final String[] hints = new String[index.sections.length];
+        for (int i = 0; i < hints.length; i++) {
+            hints[i] = index.getSurnameHintText(i, SURNAME_HINT_SEPARATOR);
+        }
+        extras.putStringArray(EXTRA_SURNAME_HINTS, hints);
         return extras;
     }
 

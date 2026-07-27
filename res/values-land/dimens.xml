@@ -46,4 +46,10 @@
 
     <!-- Top padding for the text for no account empty view -->
     <dimen name="contacts_no_account_empty_text_padding_top">16dp</dimen>
+
+    <!-- Landscape has far less vertical room, so the bar is tighter and thins labels sooner. -->
+    <dimen name="surname_index_bar_vertical_padding">4dp</dimen>
+    <dimen name="surname_index_bar_min_item_height">12dp</dimen>
+    <dimen name="surname_index_bubble_min_size">56dp</dimen>
+
 </resources>

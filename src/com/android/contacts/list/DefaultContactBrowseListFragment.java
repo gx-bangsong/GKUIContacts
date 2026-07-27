@@ -48,6 +48,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityManager;
+import android.widget.AbsListView;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -80,6 +81,7 @@ import com.android.contacts.pinyin.SurnameIndexFeature;
 import com.android.contacts.preference.ContactsPreferences;
 import com.android.contacts.quickcontact.QuickContactActivity;
 import com.android.contacts.util.AccountFilterUtil;
+import com.android.contacts.widget.SurnameIndexBarController;
 import com.android.contacts.util.ImplicitIntentsUtil;
 import com.android.contacts.util.SharedPreferenceUtil;
 import com.android.contacts.util.SyncUtil;
@@ -165,6 +167,8 @@ public class DefaultContactBrowseListFragment extends ContactBrowseListFragment
 
     /** Null when the chips bar is disabled or absent from the layout. */
     private GroupChipsController mGroupChipsController;
+    /** Null when the surname index is disabled or the bar is absent from the layout. */
+    private SurnameIndexBarController mSurnameIndexBarController;
     /** Survives the gap between onCreate restoring state and the bar being created. */
     private long mPendingGroupChipFilterId = GroupChipFilter.ALL_GROUPS;
 
@@ -305,6 +309,12 @@ public class DefaultContactBrowseListFragment extends ContactBrowseListFragment
             bindListHeader(data == null ? 0 : data.getCount());
         }
         super.onLoadFinished(loader, data);
+        if (mSurnameIndexBarController != null && loader.getId() == Directory.DEFAULT) {
+            // Runs after super, so the adapter's indexer has already been rebuilt from the
+            // cursor extras that SurnameSortedCursor rewrote.
+            mSurnameIndexBarController.setEnabled(!isSearchMode());
+            mSurnameIndexBarController.onSectionsChanged(getAdapter(), data);
+        }
         if (!isSearchMode()) {
             maybeShowHamburgerFeatureHighlight();
         }
@@ -561,6 +571,35 @@ public class DefaultContactBrowseListFragment extends ContactBrowseListFragment
         mAlertContainer.setVisibility(View.GONE);
 
         initGroupChips();
+        initSurnameIndexBar();
+    }
+
+    /**
+     * Sets up the surname-aware fast-scroll bar, which replaces the framework fast scroller
+     * (disabled in contact_list_content.xml) so the bubble can show Chinese surnames.
+     */
+    private void initSurnameIndexBar() {
+        if (!SurnameIndexFeature.isSurnameIndexEnabled(getContext())) {
+            return;
+        }
+        final SurnameIndexBarController controller =
+                new SurnameIndexBarController(mView, getListView());
+        if (controller.isAttached()) {
+            mSurnameIndexBarController = controller;
+        }
+    }
+
+    @Override
+    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount,
+            int totalItemCount) {
+        super.onScroll(view, firstVisibleItem, visibleItemCount, totalItemCount);
+        // Forwarded rather than registered directly: PinnedHeaderListView keeps a single scroll
+        // listener and configurePhotoLoader() re-registers this fragment, which would unhook the
+        // bar's own listener.
+        if (mSurnameIndexBarController != null) {
+            mSurnameIndexBarController.onScroll(
+                    view, firstVisibleItem, visibleItemCount, totalItemCount);
+        }
     }
 
     /**
@@ -912,6 +951,12 @@ public class DefaultContactBrowseListFragment extends ContactBrowseListFragment
         super.setSearchMode(flag);
         checkHeaderViewVisibility();
         if (!flag) showSearchProgress(false);
+        if (mSurnameIndexBarController != null) {
+            // Search results are ranked by relevance rather than filed alphabetically, so an
+            // A-Z bar would jump to the wrong rows. The framework fast scroller hid itself in
+            // search mode for the same reason.
+            mSurnameIndexBarController.setEnabled(!flag);
+        }
     }
 
     /** Show or hide the directory-search progress spinner. */

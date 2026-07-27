@@ -272,4 +272,12 @@
     <!-- Chip ripple. -->
     <color name="group_chip_ripple">@color/control_highlight_color</color>
 
+
+    <!-- Fast-scroll surname index bar and bubble. -->
+    <color name="surname_index_bar_text">@*android:color/system_neutral2_600</color>
+    <color name="surname_index_bar_text_active">@color/primary_color</color>
+    <color name="surname_index_bubble_background">@*android:color/system_accent1_100</color>
+    <color name="surname_index_bubble_text">@*android:color/system_neutral1_900</color>
+    <color name="surname_index_bubble_hint">@*android:color/system_neutral1_700</color>
+
 </resources>
