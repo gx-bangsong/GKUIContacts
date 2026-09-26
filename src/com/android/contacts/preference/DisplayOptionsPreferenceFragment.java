@@ -30,6 +30,7 @@ import android.database.Cursor;
 import android.icu.text.MessageFormat;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.EditTextPreference;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.provider.BlockedNumberContract;
@@ -41,6 +42,7 @@ import android.telecom.TelecomManager;
 import android.telephony.TelephonyManager;
 import android.text.BidiFormatter;
 import android.text.TextDirectionHeuristics;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -64,6 +66,7 @@ import com.android.contacts.model.account.AccountInfo;
 import com.android.contacts.model.account.AccountWithDataSet;
 import com.android.contacts.model.account.AccountsLoader;
 import com.android.contacts.util.AccountFilterUtil;
+import com.android.contacts.util.CompanySearchUtils;
 import com.android.contacts.util.ImplicitIntentsUtil;
 import com.android.contactsbind.HelpUtils;
 
@@ -140,6 +143,7 @@ public class DisplayOptionsPreferenceFragment extends PreferenceFragment
     private long mProfileContactId;
 
     private Preference mMyInfoPreference;
+    private EditTextPreference mCompanyCustomUrlPreference;
 
     private ProfileListener mListener;
 
@@ -261,6 +265,55 @@ public class DisplayOptionsPreferenceFragment extends PreferenceFragment
         if (defaultAccountPreference != null) {
             defaultAccountPreference.setOnPreferenceClickListener(this);
             defaultAccountPreference.setSummary(getDefaultAccountSummary());
+        }
+
+        // The custom URL is only used when the user defined company information provider has
+        // been selected.
+        final Preference companyProviderPreference =
+                findPreference(CompanySearchUtils.PREF_PROVIDER);
+        mCompanyCustomUrlPreference =
+                (EditTextPreference) findPreference(CompanySearchUtils.PREF_CUSTOM_URL);
+        if (companyProviderPreference != null && mCompanyCustomUrlPreference != null) {
+            companyProviderPreference.setOnPreferenceChangeListener(
+                    new Preference.OnPreferenceChangeListener() {
+                        @Override
+                        public boolean onPreferenceChange(Preference preference, Object newValue) {
+                            updateCompanyCustomUrlPreference(newValue);
+                            return true;
+                        }
+                    });
+            mCompanyCustomUrlPreference.setOnPreferenceChangeListener(
+                    new Preference.OnPreferenceChangeListener() {
+                        @Override
+                        public boolean onPreferenceChange(Preference preference, Object newValue) {
+                            final String url = newValue == null ? null : newValue.toString();
+                            preference.setSummary(TextUtils.isEmpty(url)
+                                    ? getString(R.string.company_search_custom_url_message) : url);
+                            return true;
+                        }
+                    });
+            updateCompanyCustomUrlPreference(getPreferenceManager().getSharedPreferences().getString(
+                    CompanySearchUtils.PREF_PROVIDER, CompanySearchUtils.PROVIDER_AIQICHA));
+        } else {
+            mCompanyCustomUrlPreference = null;
+        }
+    }
+
+    /** Enables the custom URL preference only when the custom provider is selected. */
+    private void updateCompanyCustomUrlPreference(Object provider) {
+        if (mCompanyCustomUrlPreference == null) {
+            return;
+        }
+        final boolean custom = CompanySearchUtils.PROVIDER_CUSTOM.equals(provider);
+        mCompanyCustomUrlPreference.setEnabled(custom);
+        if (custom) {
+            final String url = mCompanyCustomUrlPreference.getText();
+            mCompanyCustomUrlPreference.setSummary(
+                    TextUtils.isEmpty(url) ? getString(R.string.company_search_custom_url_message)
+                            : url);
+        } else {
+            mCompanyCustomUrlPreference.setSummary(
+                    getString(R.string.company_search_custom_url_disabled));
         }
     }
 

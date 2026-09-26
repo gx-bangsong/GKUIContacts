@@ -533,7 +533,23 @@ public abstract class LabeledEditorView extends LinearLayout implements Editor, 
             return;
         }
 
-        if (selected.customColumn != null) {
+        if (selected.customColumn != null && selected.customValue != null) {
+            // The type stores a fixed value in its custom column (for example WeChat or
+            // DingTalk), so there is nothing to ask the user for.
+            final String currentValue = mEntry.getAsString(selected.customColumn);
+            if (TextUtils.equals(currentValue, selected.customValue)) {
+                mType = selected;
+                mSelectedLabelIndex = position;
+                return;
+            }
+            mType = selected;
+            mEntry.put(mKind.typeColumn, mType.rawValue);
+            mEntry.put(selected.customColumn, selected.customValue);
+            mSelectedLabelIndex = position;
+            rebuildLabel();
+            requestFocusForFirstEditField();
+            onLabelRebuilt();
+        } else if (selected.customColumn != null) {
             showDialog(DIALOG_ID_CUSTOM);
         } else {
             // User picked type, and we're sure it's ok to actually write the entry.
@@ -597,9 +613,10 @@ public abstract class LabeledEditorView extends LinearLayout implements Editor, 
 
             if (mType != null && mType.customColumn != null) {
 
-                // Use custom label string when present
+                // Use custom label string when present. Known custom types (for example WeChat
+                // or DingTalk) have their own label and are listed like any other type.
                 final String customText = mEntry.getAsString(mType.customColumn);
-                if (customText != null) {
+                if (customText != null && mType.customValue == null) {
                     add(CUSTOM_SELECTION);
                     mHasCustomSelection = true;
                 }
