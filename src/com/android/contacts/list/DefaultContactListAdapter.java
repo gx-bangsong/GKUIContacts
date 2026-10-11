@@ -44,30 +44,15 @@ public class DefaultContactListAdapter extends ContactListAdapter {
     public static final char SNIPPET_START_MATCH = '[';
     public static final char SNIPPET_END_MATCH = ']';
 
-    /**
-     * Whether the organization (work) fields are searched as well. The provider only matches the
-     * beginning of a value, so the additional search is done by the app itself.
-     */
-    private boolean mSearchOrganizations = true;
 
     public DefaultContactListAdapter(Context context) {
         super(context);
     }
 
-    /** Enables or disables the additional search over the organization fields. */
-    public void setOrganizationSearchEnabled(boolean enabled) {
-        mSearchOrganizations = enabled;
-    }
-
     @Override
     public void configureLoader(CursorLoader loader, long directoryId) {
         if (loader instanceof FavoritesAndContactsLoader) {
-            final FavoritesAndContactsLoader favoritesLoader = (FavoritesAndContactsLoader) loader;
-            favoritesLoader.setLoadFavorites(shouldIncludeFavorites());
-            // The organization search only makes sense for the local directory.
-            favoritesLoader.setOrganizationSearch(
-                    mSearchOrganizations && directoryId == Directory.DEFAULT,
-                    getQueryString());
+            ((FavoritesAndContactsLoader) loader).setLoadFavorites(shouldIncludeFavorites());
         }
 
         String sortOrder = null;

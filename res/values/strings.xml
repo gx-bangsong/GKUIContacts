@@ -1018,66 +1018,6 @@
     <!-- Generic action string for starting an IM chat -->
     <string name="chat">Chat</string>
 
-    <!-- Labels of the instant messaging services which are stored as custom protocols. [CHAR LIMIT=20] -->
-    <string name="chat_wechat">WeChat</string>
-    <string name="chat_wecom">WeCom</string>
-    <string name="chat_dingtalk">DingTalk</string>
-    <string name="chat_feishu">Feishu</string>
-    <string name="chat_weibo">Weibo</string>
-    <string name="chat_douyin">Douyin</string>
-    <string name="chat_xiaohongshu">Xiaohongshu</string>
-    <string name="chat_telegram">Telegram</string>
-    <string name="chat_whatsapp">WhatsApp</string>
-    <string name="chat_line">LINE</string>
-    <string name="chat_signal">Signal</string>
-    <string name="chat_instagram">Instagram</string>
-    <string name="chat_x">X (Twitter)</string>
-    <string name="chat_facebook">Facebook</string>
-
-    <!-- Company (organization) information lookup -->
-    <!-- Settings category for looking up the company a contact works for [CHAR LIMIT=50] -->
-    <string name="company_search_category_title">Company information</string>
-    <!-- Setting: which web site is used to look up a company [CHAR LIMIT=50] -->
-    <string name="company_search_provider_title">Company information source</string>
-    <string name="company_search_provider_aiqicha">Aiqicha (Baidu)</string>
-    <string name="company_search_provider_tianyancha">Tianyancha</string>
-    <string name="company_search_provider_qcc">Qichacha</string>
-    <string name="company_search_provider_custom">Custom URL</string>
-    <!-- Setting: custom URL used to look up a company [CHAR LIMIT=50] -->
-    <string name="company_search_custom_url_title">Custom URL</string>
-    <!-- Explanation of the placeholder of the custom URL [CHAR LIMIT=100] -->
-    <string name="company_search_custom_url_message">Use %s as the placeholder of the company name.</string>
-    <!-- Default value of the custom URL, it has to contain the placeholder -->
-    <string name="company_search_custom_url_default" formatted="false">https://www.qcc.com/web/search?key=%s</string>
-    <!-- Title of the activity which shows the information of a company [CHAR LIMIT=50] -->
-    <string name="company_info_activity_title">Company information</string>
-    <!-- Menu item which reloads the company information web page [CHAR LIMIT=20] -->
-    <string name="company_info_refresh">Refresh</string>
-    <!-- Menu item which opens the company information in a browser [CHAR LIMIT=30] -->
-    <string name="company_info_open_in_browser">Open in browser</string>
-    <!-- Message shown when the company information page could not be loaded [CHAR LIMIT=100] -->
-    <string name="company_info_load_failed">Couldn\'t load the company information. Check the network connection and the address.</string>
-    <!-- Message shown when the company information page uses plain HTTP, which the app does not allow [CHAR LIMIT=100] -->
-    <string name="company_info_cleartext_blocked">The app does not allow plain HTTP. Use an address which starts with https://.</string>
-    <!-- Summary of the custom URL setting when another company information source is selected [CHAR LIMIT=60] -->
-    <string name="company_search_custom_url_disabled">Only used when "Custom URL" is selected</string>
-
-    <!-- Lunar calendar support for birthdays and anniversaries -->
-    <!-- Date picker mode: the date is a date of the (Gregorian) solar calendar [CHAR LIMIT=20] -->
-    <string name="date_picker_gregorian">Solar calendar</string>
-    <!-- Date picker mode: the date is a date of the Chinese lunar calendar [CHAR LIMIT=20] -->
-    <string name="date_picker_lunar">Lunar calendar</string>
-    <!-- Subtitle of the date picker when a lunar date is picked [CHAR LIMIT=30] -->
-    <string name="date_picker_lunar_hint">Lunar calendar</string>
-    <!-- The equivalent Gregorian date of the picked lunar date [CHAR LIMIT=40] -->
-    <string name="lunar_date_gregorian_hint">Solar date: %1$s</string>
-    <!-- A lunar date with year, %1$d is the year, %2$s the month and %3$s the day -->
-    <string name="lunar_date_with_year">Lunar %1$d-%2$s-%3$s</string>
-    <!-- A lunar date without year, %2$s is the month and %3$s the day -->
-    <string name="lunar_date_without_year">Lunar %2$s %3$s</string>
-    <!-- Prefix of a leap month, %1$s is the name of the month [CHAR LIMIT=20] -->
-    <string name="lunar_leap_month">Leap %1$s</string>
-
     <!-- String describing the Contact Editor Minus button
 
          Used by AccessibilityService to announce the purpose of the button.

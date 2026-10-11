@@ -241,8 +241,7 @@ public class ExchangeAccountType extends BaseAccountType {
     protected DataKind addDataKindOrganization(Context context) throws DefinitionException {
         final DataKind kind = super.addDataKindOrganization(context);
 
-        // A contact can work for more than one organization.
-        kind.typeOverallMax = -1;
+        kind.typeOverallMax = 1;
 
         kind.fieldList = Lists.newArrayList();
         kind.fieldList.add(new EditField(Organization.COMPANY, R.string.ghostData_company,

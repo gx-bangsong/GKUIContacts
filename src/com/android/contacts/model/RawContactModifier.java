@@ -57,7 +57,6 @@ import com.android.contacts.model.dataitem.PhoneDataItem;
 import com.android.contacts.model.dataitem.StructuredNameDataItem;
 import com.android.contacts.util.CommonDateUtils;
 import com.android.contacts.util.DateUtils;
-import com.android.contacts.util.ImProtocolUtils;
 import com.android.contacts.util.NameConverter;
 
 import java.text.ParsePosition;
@@ -227,17 +226,7 @@ public class RawContactModifier {
     public static EditType getCurrentType(ValuesDelta entry, DataKind kind) {
         final Long rawValue = entry.getAsLong(kind.typeColumn);
         if (rawValue == null) return null;
-        final EditType type = getType(kind, rawValue.intValue());
-        if (type != null && type.customColumn != null) {
-            // Several types can share the same raw value while being distinguished by the value
-            // of the custom column (for example WeChat and DingTalk are both custom protocols).
-            final EditType customType = getTypeWithCustomValue(kind, rawValue.intValue(),
-                    entry.getAsString(type.customColumn));
-            if (customType != null) {
-                return customType;
-            }
-        }
-        return type;
+        return getType(kind, rawValue.intValue());
     }
 
     /**
@@ -248,15 +237,7 @@ public class RawContactModifier {
         if (kind.typeColumn == null) return null;
         final Integer rawValue = entry.getAsInteger(kind.typeColumn);
         if (rawValue == null) return null;
-        final EditType type = getType(kind, rawValue);
-        if (type != null && type.customColumn != null) {
-            final EditType customType =
-                    getTypeWithCustomValue(kind, rawValue, entry.getAsString(type.customColumn));
-            if (customType != null) {
-                return customType;
-            }
-        }
-        return type;
+        return getType(kind, rawValue);
     }
 
     /**
@@ -268,35 +249,7 @@ public class RawContactModifier {
         final int index = cursor.getColumnIndex(kind.typeColumn);
         if (index == -1) return null;
         final int rawValue = cursor.getInt(index);
-        final EditType type = getType(kind, rawValue);
-        if (type != null && type.customColumn != null) {
-            final int customIndex = cursor.getColumnIndex(type.customColumn);
-            if (customIndex != -1 && !cursor.isNull(customIndex)) {
-                final EditType customType =
-                        getTypeWithCustomValue(kind, rawValue, cursor.getString(customIndex));
-                if (customType != null) {
-                    return customType;
-                }
-            }
-        }
-        return type;
-    }
-
-    /**
-     * Find the {@link EditType} with the given {@link EditType#rawValue} and custom value.
-     */
-    public static EditType getTypeWithCustomValue(DataKind kind, int rawValue,
-            String customValue) {
-        if (TextUtils.isEmpty(customValue)) {
-            return null;
-        }
-        for (EditType type : kind.typeList) {
-            if (type.rawValue == rawValue && type.customValue != null
-                    && ImProtocolUtils.matches(customValue, type.customValue)) {
-                return type;
-            }
-        }
-        return null;
+        return getType(kind, rawValue);
     }
 
     /**
@@ -406,12 +359,6 @@ public class RawContactModifier {
         if (kind.typeColumn != null && type != null) {
             // Set type, if provided
             after.put(kind.typeColumn, type.rawValue);
-        }
-
-        if (type != null && type.customColumn != null && type.customValue != null) {
-            // The type is one of the known custom types (for example WeChat), so store its name
-            // in the custom column as well.
-            after.put(type.customColumn, type.customValue);
         }
 
         final ValuesDelta child = ValuesDelta.fromAfter(after);
@@ -973,11 +920,8 @@ public class RawContactModifier {
 
         if (editType != null && editType.customColumn != null) {
             // Write down label when custom type picked
-            final String customType = editType.customValue != null
-                    ? editType.customValue : extras.getString(typeExtra);
-            if (customType != null) {
-                child.put(editType.customColumn, customType);
-            }
+            final String customType = extras.getString(typeExtra);
+            child.put(editType.customColumn, customType);
         }
 
         return child;

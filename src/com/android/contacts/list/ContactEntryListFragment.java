@@ -367,9 +367,7 @@ public abstract class ContactEntryListFragment<T extends ContactEntryListAdapter
     }
 
     public CursorLoader createCursorLoader(Context context) {
-        // The loader also takes care of searching the organization fields of a contact, which the
-        // provider itself can only match at the beginning of a value.
-        return new FavoritesAndContactsLoader(context) {
+        return new CursorLoader(context, null, null, null, null, null) {
             @Override
             protected Cursor onLoadInBackground() {
                 try {

@@ -45,7 +45,6 @@ import com.android.contacts.model.dataitem.CustomDataItem;
 import com.android.contacts.model.dataitem.DataKind;
 import com.android.contacts.util.CommonDateUtils;
 import com.android.contacts.util.ContactDisplayUtils;
-import com.android.contacts.util.ImProtocolUtils;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -343,23 +342,14 @@ public abstract class BaseAccountType extends AccountType {
 
         kind.typeColumn = Im.PROTOCOL;
         kind.typeList = Lists.newArrayList();
-        // Modern services first. Services without a dedicated protocol value are stored as
-        // "custom" protocols, which keeps the values readable by other contacts applications.
-        for (ImProtocolUtils.Protocol protocol : ImProtocolUtils.getProtocols()) {
-            if (protocol.rawProtocol == Im.PROTOCOL_CUSTOM) {
-                kind.typeList.add(buildImCustomType(protocol.value, protocol.labelRes));
-            } else {
-                kind.typeList.add(buildImType(protocol.rawProtocol));
-            }
-        }
-        // Legacy protocols. They are not offered as primary choices anymore, but they are kept in
-        // the list so that existing contacts can still be edited without changing their protocol.
-        kind.typeList.add(buildImType(Im.PROTOCOL_AIM).setSecondary(true));
-        kind.typeList.add(buildImType(Im.PROTOCOL_MSN).setSecondary(true));
-        kind.typeList.add(buildImType(Im.PROTOCOL_YAHOO).setSecondary(true));
-        kind.typeList.add(buildImType(Im.PROTOCOL_GOOGLE_TALK).setSecondary(true));
-        kind.typeList.add(buildImType(Im.PROTOCOL_ICQ).setSecondary(true));
-        kind.typeList.add(buildImType(Im.PROTOCOL_JABBER).setSecondary(true));
+        kind.typeList.add(buildImType(Im.PROTOCOL_AIM));
+        kind.typeList.add(buildImType(Im.PROTOCOL_MSN));
+        kind.typeList.add(buildImType(Im.PROTOCOL_YAHOO));
+        kind.typeList.add(buildImType(Im.PROTOCOL_SKYPE));
+        kind.typeList.add(buildImType(Im.PROTOCOL_QQ));
+        kind.typeList.add(buildImType(Im.PROTOCOL_GOOGLE_TALK));
+        kind.typeList.add(buildImType(Im.PROTOCOL_ICQ));
+        kind.typeList.add(buildImType(Im.PROTOCOL_JABBER));
         kind.typeList.add(buildImType(Im.PROTOCOL_CUSTOM).setSecondary(true).setCustomColumn(
                 Im.CUSTOM_PROTOCOL));
 
@@ -369,25 +359,12 @@ public abstract class BaseAccountType extends AccountType {
         return kind;
     }
 
-    /**
-     * Builds a type for one of the known instant messaging services. The service is stored as a
-     * custom protocol, i.e. {@link Im#PROTOCOL} is set to {@link Im#PROTOCOL_CUSTOM} and the name
-     * of the service (for example "WeChat") is written into {@link Im#CUSTOM_PROTOCOL}.
-     */
-    protected static EditType buildImCustomType(String customProtocol, int labelRes) {
-        return new EditType(Im.PROTOCOL_CUSTOM, labelRes)
-                .setCustomColumn(Im.CUSTOM_PROTOCOL)
-                .setCustomValue(customProtocol);
-    }
-
     protected DataKind addDataKindOrganization(Context context) throws DefinitionException {
         DataKind kind = addKind(new DataKind(Organization.CONTENT_ITEM_TYPE,
                     R.string.organizationLabelsGroup, Weight.ORGANIZATION, true));
         kind.actionHeader = new SimpleInflater(R.string.organizationLabelsGroup);
         kind.actionBody = ORGANIZATION_BODY_INFLATER;
-        // A contact can work for (or hold an office in) more than one organization, so there is
-        // no limit on the number of entries.
-        kind.typeOverallMax = -1;
+        kind.typeOverallMax = 1;
 
         kind.fieldList = Lists.newArrayList();
         kind.fieldList.add(new EditField(Organization.COMPANY, R.string.ghostData_company,
@@ -635,23 +612,6 @@ public abstract class BaseAccountType extends AccountType {
         @Override
         protected String getLabelColumn() {
             return Im.CUSTOM_PROTOCOL;
-        }
-
-        @Override
-        protected CharSequence getTypeLabel(Resources res, Integer type, CharSequence label) {
-            if (type != null && type == Im.PROTOCOL_CUSTOM) {
-                // Known services are stored as custom protocols, e.g. "WeChat", and get their
-                // own label.
-                final String customProtocol = label == null ? null : label.toString();
-                final int labelRes = ImProtocolUtils.getLabelRes(customProtocol);
-                if (labelRes != 0) {
-                    return res.getText(labelRes);
-                }
-                if (!TextUtils.isEmpty(customProtocol)) {
-                    return customProtocol;
-                }
-            }
-            return super.getTypeLabel(res, type, label);
         }
 
         @Override
@@ -1283,8 +1243,7 @@ public abstract class BaseAccountType extends AccountType {
             kind.fieldList.add(new EditField(Organization.TITLE, R.string.ghostData_title,
                     FLAGS_GENERIC_NAME));
 
-            // A contact may have more than one organization, so the number of entries is not
-            // restricted here (the default of MAX_OCCURRENCE is "unlimited").
+            throwIfList(kind);
 
             return Lists.newArrayList(kind);
         }
