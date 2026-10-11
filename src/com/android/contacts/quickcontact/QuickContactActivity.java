@@ -157,8 +157,10 @@ import com.android.contacts.quickcontact.ExpandingEntryCardView.EntryContextMenu
 import com.android.contacts.quickcontact.ExpandingEntryCardView.EntryTag;
 import com.android.contacts.quickcontact.ExpandingEntryCardView.ExpandingEntryCardViewListener;
 import com.android.contacts.quickcontact.WebAddress.ParseException;
+import com.android.contacts.util.CompanySearchUtils;
 import com.android.contacts.util.DateUtils;
 import com.android.contacts.util.ImageViewDrawableSetter;
+import com.android.contacts.util.LunarCalendarUtils;
 import com.android.contacts.util.ImplicitIntentsUtil;
 import com.android.contacts.util.MaterialColorMapUtils;
 import com.android.contacts.util.MaterialColorMapUtils.MaterialPalette;
@@ -1585,6 +1587,12 @@ public class QuickContactActivity extends ContactsActivity {
         } else if (dataItem instanceof OrganizationDataItem) {
             final OrganizationDataItem organization = (OrganizationDataItem) dataItem;
             header = res.getString(R.string.header_organization_entry);
+            // Clicking the company looks up the company information of the contact on the
+            // configured company information web site.
+            final String company = organization.getCompany();
+            if (!TextUtils.isEmpty(company)) {
+                intent = CompanySearchUtils.buildCompanyInfoIntent(context, company);
+            }
             entryContextMenuInfo =
                     new EntryContextMenuInfo(
                             subHeader,
@@ -1666,14 +1674,32 @@ public class QuickContactActivity extends ContactsActivity {
         } else if (dataItem instanceof EventDataItem) {
             final EventDataItem event = (EventDataItem) dataItem;
             final String dataString = event.buildDataStringForDisplay(context, kind);
-            final Calendar cal = DateUtils.parseDate(dataString, false);
-            if (cal != null) {
-                final int eventType = event.getContentValues().getAsInteger(Event.TYPE);
-                if (eventType == Event.TYPE_ANNIVERSARY || eventType == Event.TYPE_BIRTHDAY) {
-                    // setting the year to 0 makes a click open the coming birthday
-                    cal.set(Calendar.YEAR, 0);
+            final Integer eventType = event.getContentValues().getAsInteger(Event.TYPE);
+            final boolean annualEvent = eventType != null
+                    && (eventType == Event.TYPE_ANNIVERSARY || eventType == Event.TYPE_BIRTHDAY);
+            Date nextAnniversary = null;
+            if (event.isLunar()) {
+                // A date of the lunar calendar is converted into the Gregorian date of its next
+                // occurrence, so that a click opens the coming birthday or anniversary.
+                final int[] lunar = LunarCalendarUtils.parseLunarDate(dataString);
+                if (lunar != null) {
+                    final Calendar nextLunar = LunarCalendarUtils.getNextAnnualDate(
+                            annualEvent ? 0 : lunar[0], lunar[1], event.isLeapMonth(), lunar[2]);
+                    if (nextLunar != null) {
+                        nextAnniversary = nextLunar.getTime();
+                    }
                 }
-                final Date nextAnniversary = DateUtils.getNextAnnualDate(cal);
+            } else {
+                final Calendar cal = DateUtils.parseDate(dataString, false);
+                if (cal != null) {
+                    if (annualEvent) {
+                        // setting the year to 0 makes a click open the coming birthday
+                        cal.set(Calendar.YEAR, 0);
+                    }
+                    nextAnniversary = DateUtils.getNextAnnualDate(cal);
+                }
+            }
+            if (nextAnniversary != null) {
                 final Uri.Builder builder = CalendarContract.CONTENT_URI.buildUpon();
                 builder.appendPath("time");
                 ContentUris.appendId(builder, nextAnniversary.getTime());
@@ -1686,7 +1712,8 @@ public class QuickContactActivity extends ContactsActivity {
                                         res, event.getKindTypeColumn(kind), event.getLabel())
                                 .toString();
             }
-            text = DateUtils.formatDate(context, dataString);
+            final String lunarText = event.getLunarStartDateString(context);
+            text = lunarText != null ? lunarText : DateUtils.formatDate(context, dataString);
             entryContextMenuInfo =
                     new EntryContextMenuInfo(
                             text,

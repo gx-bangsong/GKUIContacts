@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.provider.ContactsContract.CommonDataKinds.Event;
+import android.provider.ContactsContract.Data;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.view.View;
@@ -28,8 +29,9 @@ import android.widget.Button;
 
 import com.android.contacts.R;
 import com.android.contacts.datepicker.DatePicker;
-import com.android.contacts.datepicker.DatePickerDialog;
-import com.android.contacts.datepicker.DatePickerDialog.OnDateSetListener;
+import com.android.contacts.datepicker.LunarDatePicker;
+import com.android.contacts.datepicker.LunarDatePickerDialog;
+import com.android.contacts.datepicker.LunarDatePickerDialog.OnDateSetListener;
 import com.android.contacts.model.RawContactDelta;
 import com.android.contacts.model.ValuesDelta;
 import com.android.contacts.model.account.AccountType.EditField;
@@ -37,6 +39,7 @@ import com.android.contacts.model.account.AccountType.EventEditType;
 import com.android.contacts.model.dataitem.DataKind;
 import com.android.contacts.util.CommonDateUtils;
 import com.android.contacts.util.DateUtils;
+import com.android.contacts.util.LunarCalendarUtils;
 
 import java.text.ParsePosition;
 import java.util.Calendar;
@@ -54,6 +57,12 @@ public class EventFieldEditorView extends LabeledEditorView {
     private String mNoDateString;
     private int mPrimaryTextColor;
     private int mHintTextColor;
+
+    /**
+     * Column which stores whether the date is a date of the Chinese lunar calendar. The column
+     * is not used by events, so it can be used as a marker.
+     */
+    private static final String MARKER_COLUMN = Data.DATA15;
 
     private Button mDateView;
 
@@ -117,11 +126,45 @@ public class EventFieldEditorView extends LabeledEditorView {
         updateEmptiness();
     }
 
+    /** Returns the value of the column which stores whether the date is a lunar date. */
+    private String getLunarMarker() {
+        return getEntry() == null ? null : getEntry().getAsString(MARKER_COLUMN);
+    }
+
+    /** Returns true when the date of this event is a date of the lunar calendar. */
+    private boolean isLunar() {
+        return LunarCalendarUtils.isLunarMarker(getLunarMarker());
+    }
+
+    private boolean isLeapMonth() {
+        return LunarCalendarUtils.isLeapMarker(getLunarMarker());
+    }
+
+    /** Returns true when this type of event can be a lunar date (birthday or anniversary). */
+    private boolean isLunarOptionSupported() {
+        final EventEditType type = getType();
+        if (type == null) {
+            return false;
+        }
+        return type.rawValue == Event.TYPE_BIRTHDAY || type.rawValue == Event.TYPE_ANNIVERSARY;
+    }
+
     private void rebuildDateView() {
         final EditField editField = getKind().fieldList.get(0);
         final String column = editField.column;
-        String data = DateUtils.formatDate(getContext(), getEntry().getAsString(column),
-                false /*Use the short DateFormat to ensure that it fits inside the EditText*/);
+        final String rawValue = getEntry().getAsString(column);
+        String data = null;
+        if (isLunar()) {
+            final int[] lunar = LunarCalendarUtils.parseLunarDate(rawValue);
+            if (lunar != null) {
+                data = LunarCalendarUtils.getDisplayString(getContext(), lunar[0], lunar[1],
+                        isLeapMonth(), lunar[2]);
+            }
+        }
+        if (data == null) {
+            data = DateUtils.formatDate(getContext(), rawValue,
+                    false /*Use the short DateFormat to ensure that it fits inside the EditText*/);
+        }
         if (TextUtils.isEmpty(data)) {
             mDateView.setText(mNoDateString);
             mDateView.setTextColor(mHintTextColor);
@@ -169,6 +212,26 @@ public class EventFieldEditorView extends LabeledEditorView {
         // Check whether the year is optional
         final boolean isYearOptional = getType() != null && getType().isYearOptional();
 
+        if (isLunar()) {
+            // The date of a lunar calendar is stored in the same format as a Gregorian date, but
+            // the date formats of the kind cannot parse it, so the year is added here when the
+            // type requires one.
+            if (!isYearOptional && !TextUtils.isEmpty(oldValue)) {
+                final int[] lunar = LunarCalendarUtils.parseLunarDate(oldValue);
+                if (lunar == null || lunar[0] != 0) return;
+
+                final Calendar today = Calendar.getInstance();
+                final int[] lunarToday = LunarCalendarUtils.gregorianToLunar(
+                        today.get(Calendar.YEAR), today.get(Calendar.MONTH) + 1,
+                        today.get(Calendar.DAY_OF_MONTH));
+                final int year = lunarToday == null ? today.get(Calendar.YEAR) : lunarToday[0];
+
+                onFieldChanged(column, LunarCalendarUtils.encodeDate(year, lunar[1], lunar[2]));
+                rebuildDateView();
+            }
+            return;
+        }
+
         if (!isYearOptional && !TextUtils.isEmpty(oldValue)) {
             final ParsePosition position = new ParsePosition(0);
             final Date date2 = kind.dateFormatWithoutYear == null
@@ -205,24 +268,46 @@ public class EventFieldEditorView extends LabeledEditorView {
         // Check whether the year is optional
         final boolean isYearOptional = getType().isYearOptional();
 
-        final int oldYear, oldMonth, oldDay;
+        final int[] lunarToday = LunarCalendarUtils.gregorianToLunar(defaultYear,
+                calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.DAY_OF_MONTH));
 
-        if (TextUtils.isEmpty(oldValue)) {
+        final int mode;
+        final int oldYear, oldMonth, oldDay;
+        final boolean oldLeap;
+
+        if (isLunar()) {
+            // The stored date is a date of the lunar calendar.
+            int[] oldLunar = LunarCalendarUtils.parseLunarDate(oldValue);
+            if (oldLunar == null) {
+                if (lunarToday == null) return null;
+                // Not a valid lunar date: use the lunar date of today.
+                oldLunar = new int[] { lunarToday[0], lunarToday[1], lunarToday[2] };
+            }
+            mode = LunarDatePickerDialog.MODE_LUNAR;
+            oldYear = (oldLunar[0] == 0 && !isYearOptional) ? defaultYear : oldLunar[0];
+            oldMonth = oldLunar[1];
+            oldLeap = isLeapMonth();
+            oldDay = oldLunar[2];
+        } else if (TextUtils.isEmpty(oldValue)) {
             // Default to the current date
+            mode = LunarDatePickerDialog.MODE_GREGORIAN;
             oldYear = defaultYear;
             oldMonth = calendar.get(Calendar.MONTH);
+            oldLeap = false;
             oldDay = calendar.get(Calendar.DAY_OF_MONTH);
         } else {
             // Try parsing with year
             Calendar cal = DateUtils.parseDate(oldValue, false);
             if (cal != null) {
+                mode = LunarDatePickerDialog.MODE_GREGORIAN;
                 if (DateUtils.isYearSet(cal)) {
                     oldYear = cal.get(Calendar.YEAR);
                 } else {
                     //cal.set(Calendar.YEAR, 0);
-                    oldYear = isYearOptional ? DatePickerDialog.NO_YEAR : defaultYear;
+                    oldYear = isYearOptional ? DatePicker.NO_YEAR : defaultYear;
                 }
                 oldMonth = cal.get(Calendar.MONTH);
+                oldLeap = false;
                 oldDay = cal.get(Calendar.DAY_OF_MONTH);
             } else {
                 return null;
@@ -230,7 +315,20 @@ public class EventFieldEditorView extends LabeledEditorView {
         }
         final OnDateSetListener callBack = new OnDateSetListener() {
             @Override
-            public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
+            public void onDateSet(boolean lunar, int year, int monthOfYear, boolean leap,
+                    int dayOfMonth) {
+                if (lunar) {
+                    // The date of a lunar calendar is stored in the same format as a Gregorian
+                    // date, the marker column tells which calendar it belongs to.
+                    final int lunarYear = (year == LunarDatePicker.NO_YEAR) ? 0 : year;
+                    onFieldChanged(column, LunarCalendarUtils.encodeDate(lunarYear, monthOfYear,
+                            dayOfMonth));
+                    onFieldChanged(MARKER_COLUMN, leap ? LunarCalendarUtils.MARKER_LUNAR_LEAP
+                            : LunarCalendarUtils.MARKER_LUNAR);
+                    rebuildDateView();
+                    return;
+                }
+
                 if (year == 0 && !isYearOptional) throw new IllegalStateException();
                 final Calendar outCalendar =
                         Calendar.getInstance(DateUtils.UTC_TIMEZONE, Locale.US);
@@ -239,7 +337,7 @@ public class EventFieldEditorView extends LabeledEditorView {
                 // The format string will ignore that year.
                 // For formats other than Exchange, the time of the day is ignored
                 outCalendar.clear();
-                outCalendar.set(year == DatePickerDialog.NO_YEAR ? 2000 : year, monthOfYear,
+                outCalendar.set(year == DatePicker.NO_YEAR ? 2000 : year, monthOfYear,
                         dayOfMonth, CommonDateUtils.DEFAULT_HOUR, 0, 0);
 
                 final String resultString;
@@ -253,11 +351,13 @@ public class EventFieldEditorView extends LabeledEditorView {
                 if (resultString == null) return;
 
                 onFieldChanged(column, resultString);
+                // The date is not a date of the lunar calendar any more.
+                onFieldChanged(MARKER_COLUMN, "");
                 rebuildDateView();
             }
         };
-        final DatePickerDialog resultDialog = new DatePickerDialog(getContext(), callBack,
-                oldYear, oldMonth, oldDay, isYearOptional);
+        final LunarDatePickerDialog resultDialog = new LunarDatePickerDialog(getContext(), callBack,
+                mode, oldYear, oldMonth, oldLeap, oldDay, isYearOptional, isLunarOptionSupported());
         return resultDialog;
     }
 
@@ -270,6 +370,8 @@ public class EventFieldEditorView extends LabeledEditorView {
         // Update state
         final String column = getKind().fieldList.get(0).column;
         onFieldChanged(column, "");
+        // The entry is not a date of the lunar calendar any more.
+        onFieldChanged(MARKER_COLUMN, "");
     }
 
     /**

@@ -25,6 +25,7 @@ import android.provider.ContactsContract.CommonDataKinds.Phone;
 import android.provider.ContactsContract.CommonDataKinds.StructuredPostal;
 import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.RawContacts;
+import android.text.TextUtils;
 import android.view.inputmethod.EditorInfo;
 import android.widget.EditText;
 
@@ -362,6 +363,14 @@ public abstract class AccountType {
          */
         public int specificMax;
         public String customColumn;
+        /**
+         * Optional value which is written into {@link #customColumn} when this type is selected.
+         *
+         * <p>This allows several distinct types (for example the various instant messaging
+         * protocols such as WeChat or DingTalk) to share the single "custom" raw value while
+         * still being individually recognizable.
+         */
+        public String customValue;
 
         public EditType(int rawValue, int labelRes) {
             this.rawValue = rawValue;
@@ -384,18 +393,27 @@ public abstract class AccountType {
             return this;
         }
 
+        /**
+         * Sets the value that is stored into {@link #customColumn} when this type is picked.
+         */
+        public EditType setCustomValue(String customValue) {
+            this.customValue = customValue;
+            return this;
+        }
+
         @Override
         public boolean equals(Object object) {
             if (object instanceof EditType) {
                 final EditType other = (EditType)object;
-                return other.rawValue == rawValue;
+                return other.rawValue == rawValue
+                        && TextUtils.equals(other.customValue, customValue);
             }
             return false;
         }
 
         @Override
         public int hashCode() {
-            return rawValue;
+            return customValue == null ? rawValue : rawValue * 31 + customValue.hashCode();
         }
 
         @Override

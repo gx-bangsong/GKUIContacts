@@ -20,7 +20,10 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.provider.ContactsContract;
 import android.provider.ContactsContract.CommonDataKinds.Event;
+import android.provider.ContactsContract.Data;
 import android.text.TextUtils;
+
+import com.android.contacts.util.LunarCalendarUtils;
 
 /**
  * Represents an event data item, wrapping the columns in
@@ -40,6 +43,40 @@ public class EventDataItem extends DataItem {
         return getContentValues().getAsString(Event.LABEL);
     }
 
+    /**
+     * Value of the column which stores whether the start date is a date of the Chinese lunar
+     * calendar. The column is not used by events, so it can be used as a marker.
+     */
+    public String getLunarMarker() {
+        return getContentValues().getAsString(Data.DATA15);
+    }
+
+    /** Returns true when the start date is a date of the Chinese lunar calendar. */
+    public boolean isLunar() {
+        return LunarCalendarUtils.isLunarMarker(getLunarMarker());
+    }
+
+    /** Returns true when the lunar date is in a leap month (闰月). */
+    public boolean isLeapMonth() {
+        return LunarCalendarUtils.isLeapMarker(getLunarMarker());
+    }
+
+    /**
+     * Returns the text of the start date when it is a date of the lunar calendar, for example
+     * "农历八月十五", or null when the start date is a Gregorian date.
+     */
+    public String getLunarStartDateString(Context context) {
+        if (!isLunar()) {
+            return null;
+        }
+        final int[] lunar = LunarCalendarUtils.parseLunarDate(getStartDate());
+        if (lunar == null) {
+            return null;
+        }
+        return LunarCalendarUtils.getDisplayString(context, lunar[0], lunar[1], isLeapMonth(),
+                lunar[2]);
+    }
+
     @Override
     public boolean shouldCollapseWith(DataItem t, Context context) {
         if (!(t instanceof EventDataItem) || mKind == null || t.getDataKind() == null) {
@@ -47,7 +84,8 @@ public class EventDataItem extends DataItem {
         }
         final EventDataItem that = (EventDataItem) t;
         // Events can be different (anniversary, birthday) but have the same start date
-        if (!TextUtils.equals(getStartDate(), that.getStartDate())) {
+        if (!TextUtils.equals(getStartDate(), that.getStartDate())
+                || !TextUtils.equals(getLunarMarker(), that.getLunarMarker())) {
             return false;
         } else if (!hasKindTypeColumn(mKind) || !that.hasKindTypeColumn(that.getDataKind())) {
             return hasKindTypeColumn(mKind) == that.hasKindTypeColumn(that.getDataKind());
