@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     Copyright (C) 2026 The LineageOS Project
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<!--
+     Local theme overlays.
+
+     The app theme is Theme.AppCompat.Light.DarkActionBar (see PeopleThemeAppCompat in
+     styles.xml), not a Material 3 theme, so MD3 semantic attributes such as
+     ?attr/colorSecondaryContainer do not exist and referencing one would fail to build.
+     Rather than reparent the whole app — which would change every ActionBar, dialog and list
+     in the process — the group chips get a narrow overlay of their own that supplies just the
+     colours a Chip needs, derived from the existing colorAccent / primary_color.
+
+     Colours themselves live in colors.xml and values-night/colors.xml so dark mode is handled
+     by resource qualification, consistent with the rest of this app.
+-->
+<resources>
+
+    <!--
+         Applied to the ChipGroup in group_chips_bar.xml, scoped to that subtree only.
+
+         The parent is a Material Components overlay rather than an empty one because Chip runs
+         ThemeEnforcement during inflation and needs the Material theme attributes (colorSurface,
+         colorOnSurface and friends) to be resolvable. Overlaying just this subtree gives the chips
+         what they need without reparenting the app theme and disturbing every other screen.
+
+         Note this is Material Components, not Material 3: it supplies no colorSecondaryContainer,
+         which is why the selected-chip colours are named explicitly in colors.xml.
+    -->
+    <style name="ThemeOverlay.Contacts.GroupChips"
+           parent="ThemeOverlay.MaterialComponents">
+        <item name="colorAccent">@color/group_chip_accent</item>
+        <item name="colorPrimary">@color/group_chip_accent</item>
+        <item name="colorControlHighlight">@color/group_chip_ripple</item>
+        <item name="android:textColorPrimary">@color/group_chip_text</item>
+    </style>
+
+    <!--
+         Chip styling. Widget.MaterialComponents.Chip.Filter is the Material Components filter
+         chip, which is the shape and behaviour Google Contacts uses for its label chips: a
+         checkable chip with a check mark that appears on selection.
+    -->
+    <style name="Widget.Contacts.GroupChip" parent="Widget.MaterialComponents.Chip.Filter">
+        <item name="chipBackgroundColor">@color/group_chip_background</item>
+        <item name="android:textColor">@color/group_chip_text</item>
+        <item name="chipStrokeColor">@color/group_chip_stroke</item>
+        <item name="chipStrokeWidth">@dimen/group_chip_stroke_width</item>
+        <item name="chipMinHeight">@dimen/group_chip_min_height</item>
+        <item name="chipCornerRadius">@dimen/group_chip_corner_radius</item>
+        <item name="android:textAppearance">@style/TextAppearance.Contacts.GroupChip</item>
+        <item name="checkedIconVisible">true</item>
+        <item name="checkedIconTint">@color/group_chip_text</item>
+        <item name="chipIconVisible">false</item>
+        <item name="closeIconVisible">false</item>
+        <item name="rippleColor">@color/group_chip_ripple</item>
+    </style>
+
+    <style name="TextAppearance.Contacts.GroupChip"
+           parent="TextAppearance.AppCompat.Body2">
+        <item name="android:textSize">@dimen/group_chip_text_size</item>
+    </style>
+
+</resources>

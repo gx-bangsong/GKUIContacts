@@ -29,6 +29,8 @@ import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract.SearchSnippets;
 import android.text.TextUtils;
 
+import com.android.contacts.pinyin.SurnameIndexFeature;
+import com.android.contacts.pinyin.SurnameSortedCursor;
 import com.google.common.collect.Lists;
 
 import java.util.HashSet;
@@ -130,12 +132,49 @@ public class FavoritesAndContactsLoader extends CursorLoader {
         // ContactsCursor.loadInBackground() can return null; MergeCursor
         // correctly handles null cursors.
         try {
-            return super.loadInBackground();
+            return reindexBySurname(super.loadInBackground());
 
         } catch (NullPointerException | SQLiteException | SecurityException e) {
             // Ignore NPEs, SQLiteExceptions and SecurityExceptions thrown by providers
         }
         return null;
+    }
+
+    /**
+     * Re-orders the alphabetical section of the list by Chinese surname pronunciation and
+     * republishes the address-book index in the cursor's extras.
+     *
+     * <p>Applied only to the contacts cursor, never to the favorites one. Favorites are merged in
+     * ahead of the alphabetical rows and are deliberately not sorted by name, and
+     * {@code ContactEntryListAdapter.setFavoritesSectionHeader()} shifts every indexer position by
+     * the favorites count afterwards. Re-sorting them here would scramble that.
+     *
+     * <p>Runs on the Loader's background thread, so the resolving and sorting never touch the main
+     * thread. Failures degrade to the provider's own ordering.
+     */
+    private Cursor reindexBySurname(Cursor cursor) {
+        if (cursor == null || !SurnameIndexFeature.isSurnameIndexEnabled(getContext())) {
+            return cursor;
+        }
+        final int nameColumn = findDisplayNameColumn(cursor);
+        if (nameColumn < 0) {
+            return cursor;
+        }
+        return SurnameSortedCursor.wrap(getContext(), cursor, nameColumn);
+    }
+
+    /**
+     * Locates whichever display-name column the current projection carries. The adapter swaps
+     * between {@link Contacts#DISPLAY_NAME_PRIMARY} and {@link Contacts#DISPLAY_NAME_ALTERNATIVE}
+     * depending on the user's name-display preference, and we must index the one actually being
+     * shown and sorted on.
+     */
+    private static int findDisplayNameColumn(Cursor cursor) {
+        final int primary = cursor.getColumnIndex(Contacts.DISPLAY_NAME_PRIMARY);
+        if (primary >= 0) {
+            return primary;
+        }
+        return cursor.getColumnIndex(Contacts.DISPLAY_NAME_ALTERNATIVE);
     }
 
     private Cursor loadFavoritesContacts() {

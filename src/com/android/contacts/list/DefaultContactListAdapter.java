@@ -24,6 +24,7 @@ import android.net.Uri;
 import android.net.Uri.Builder;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
+import android.provider.ContactsContract.CommonDataKinds.GroupMembership;
 import android.provider.ContactsContract.Contacts;
 import android.provider.ContactsContract.Data;
 import android.provider.ContactsContract.Directory;
@@ -31,6 +32,7 @@ import android.provider.ContactsContract.SearchSnippets;
 import android.text.TextUtils;
 import android.view.View;
 import com.android.contacts.compat.ContactsCompat;
+import com.android.contacts.group.GroupChipFilter;
 import com.android.contacts.model.account.AccountWithDataSet;
 import com.android.contacts.preference.ContactsPreferences;
 import java.util.ArrayList;
@@ -50,6 +52,9 @@ public class DefaultContactListAdapter extends ContactListAdapter {
      */
     private boolean mSearchOrganizations = true;
 
+    /** Group selected in the chips bar, or {@link GroupChipFilter#ALL_GROUPS} for no filter. */
+    private long mGroupChipFilterId = GroupChipFilter.ALL_GROUPS;
+
     public DefaultContactListAdapter(Context context) {
         super(context);
     }
@@ -59,11 +64,29 @@ public class DefaultContactListAdapter extends ContactListAdapter {
         mSearchOrganizations = enabled;
     }
 
+    /**
+     * Restricts the list to one group, or {@link GroupChipFilter#ALL_GROUPS} for no restriction.
+     * Set from the group chips bar; the caller reloads afterwards.
+     */
+    public void setGroupChipFilter(long groupId) {
+        mGroupChipFilterId = groupId;
+    }
+
+    public long getGroupChipFilter() {
+        return mGroupChipFilterId;
+    }
+
+    private boolean hasGroupChipFilter() {
+        return mGroupChipFilterId != GroupChipFilter.ALL_GROUPS;
+    }
+
     @Override
     public void configureLoader(CursorLoader loader, long directoryId) {
         if (loader instanceof FavoritesAndContactsLoader) {
             final FavoritesAndContactsLoader favoritesLoader = (FavoritesAndContactsLoader) loader;
-            favoritesLoader.setLoadFavorites(shouldIncludeFavorites());
+            // Favorites are a cross-cutting view of the whole address book, so they are not
+            // meaningful once the list has been narrowed to a single label.
+            favoritesLoader.setLoadFavorites(shouldIncludeFavorites() && !hasGroupChipFilter());
             // The organization search only makes sense for the local directory.
             favoritesLoader.setOrganizationSearch(
                     mSearchOrganizations && directoryId == Directory.DEFAULT,
@@ -81,6 +104,21 @@ public class DefaultContactListAdapter extends ContactListAdapter {
                 loader.setUri(Contacts.CONTENT_URI);
                 loader.setProjection(getProjection(false));
                 loader.setSelection("0");
+            } else if (hasGroupChipFilter() && directoryId == Directory.DEFAULT) {
+                // Searching while a label chip is active: search within that label.
+                //
+                // This matches the existing FILTER_TYPE_GROUP_MEMBERS branch below and, like it,
+                // uses a plain LIKE rather than CONTENT_FILTER_URI, so it does not pick up the
+                // provider's pinyin/T9 matching. See
+                // SurnameIndexFeature.ENABLE_PINYIN_IN_GROUP_SEARCH for the extension point.
+                configureGroupChipUri(loader, directoryId);
+                loader.setProjection(getDataProjectionForContacts(/* forSearch */ false));
+                loader.setSelection(GroupChipFilter.buildSelection(
+                        Data.MIMETYPE, GroupMembership.GROUP_ROW_ID,
+                        Contacts.DISPLAY_NAME_PRIMARY, Contacts.DISPLAY_NAME_ALTERNATIVE,
+                        /* hasQuery */ true));
+                loader.setSelectionArgs(GroupChipFilter.buildSelectionArgs(
+                        GroupMembership.CONTENT_ITEM_TYPE, mGroupChipFilterId, query));
             } else if (isGroupMembersFilter()) {
                 final ContactListFilter filter = getFilter();
                 configureUri(loader, directoryId, filter);
@@ -101,6 +139,16 @@ public class DefaultContactListAdapter extends ContactListAdapter {
                 loader.setProjection(getProjection(true));
                 sortOrder = Contacts.SORT_KEY_PRIMARY;
             }
+        } else if (hasGroupChipFilter() && directoryId == Directory.DEFAULT) {
+            // A label chip is active and we are not searching: list that label's members.
+            configureGroupChipUri(loader, directoryId);
+            loader.setProjection(getDataProjectionForContacts(/* forSearch */ false));
+            loader.setSelection(GroupChipFilter.buildSelection(
+                    Data.MIMETYPE, GroupMembership.GROUP_ROW_ID,
+                    Contacts.DISPLAY_NAME_PRIMARY, Contacts.DISPLAY_NAME_ALTERNATIVE,
+                    /* hasQuery */ false));
+            loader.setSelectionArgs(GroupChipFilter.buildSelectionArgs(
+                    GroupMembership.CONTENT_ITEM_TYPE, mGroupChipFilterId, /* query */ null));
         } else {
             final ContactListFilter filter = getFilter();
             configureUri(loader, directoryId, filter);
@@ -133,6 +181,24 @@ public class DefaultContactListAdapter extends ContactListAdapter {
     private boolean isGroupMembersFilter() {
         final ContactListFilter filter = getFilter();
         return filter != null && filter.filterType == ContactListFilter.FILTER_TYPE_GROUP_MEMBERS;
+    }
+
+    /**
+     * Points the loader at the Data table for a group-membership query, mirroring
+     * {@code GroupMembersAdapter.configureLoader()}.
+     *
+     * <p>The address-book index parameter is requested so section headers keep working inside a
+     * label; {@code SurnameSortedCursor} then rewrites that index by surname pronunciation, the
+     * same as for the unfiltered list.
+     */
+    private void configureGroupChipUri(CursorLoader loader, long directoryId) {
+        final Uri.Builder builder = Data.CONTENT_URI.buildUpon()
+                .appendQueryParameter(ContactsContract.DIRECTORY_PARAM_KEY,
+                        String.valueOf(directoryId));
+        if (isSectionHeaderDisplayEnabled()) {
+            builder.appendQueryParameter(Contacts.EXTRA_ADDRESS_BOOK_INDEX, "true");
+        }
+        loader.setUri(builder.build());
     }
 
     private void appendSearchParameters(Builder builder, String query, long directoryId) {

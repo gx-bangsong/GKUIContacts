@@ -63,6 +63,10 @@
          - paddingTop should be here to show "shade" effect correctly. -->
     <include layout="@layout/account_filter_header" />
 
+    <!-- Group (label) filter chips, between the search bar and the list.
+         Starts GONE; GroupChipsController shows it once labels have loaded. -->
+    <include layout="@layout/group_chips_bar" />
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dip"
@@ -88,11 +92,28 @@
                 android:layout_marginEnd="?attr/contact_browser_list_padding_right"
                 android:paddingTop="?attr/list_item_padding_top"
                 android:clipToPadding="false"
-                android:fastScrollEnabled="true"
+                android:fastScrollEnabled="false"
                 android:forceDarkAllowed="false"
 		android:visibility="gone"
                 android:fadingEdge="none" />
         </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+        <!-- Replaces the framework fast scroller, whose overlay cannot be restyled to show the
+             Chinese surnames filed under a letter. Disabled above via fastScrollEnabled=false. -->
+        <com.android.contacts.widget.SurnameIndexBarView
+            android:id="@+id/surname_index_bar"
+            android:layout_width="@dimen/surname_index_bar_width"
+            android:layout_height="match_parent"
+            android:layout_gravity="end"
+            android:visibility="gone" />
+
+        <!-- Magnified preview shown while dragging the bar. A sibling rather than a child of the
+             bar so it can extend past the bar's narrow bounds. -->
+        <com.android.contacts.widget.SurnameIndexBubbleView
+            android:id="@+id/surname_index_bubble"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
 
         <ProgressBar
             android:id="@+id/search_progress"

@@ -1,0 +1,66 @@
+# =====================================================================================
+# 姓氏归类覆盖表 — surname bucket override table
+# =====================================================================================
+#
+# 这是【部署方定制入口】，优先级最高，压过复姓表与多音姓氏表。
+# This is the DEPLOYMENT CUSTOMISATION HOOK. It outranks both the compound and the
+# polyphonic tables, at every match length.
+#
+# 格式 / Format:
+#   汉字,首字母,注释
+#   surname,initial,note
+#
+#   汉字     单字姓或复姓均可，如「覃」或「欧阳」
+#            either a single-character or a compound surname, e.g. 覃 or 欧阳
+#   首字母   单个 A-Z 字母，大小写皆可（会自动转大写）
+#            a single A-Z letter; lowercase is accepted and uppercased
+#   注释     自由文本，可含逗号 / free text, may contain commas
+#
+# 优先级 / Precedence:
+#   surnames_override.csv  ←── 本文件，最高
+#   复姓表 compound（最长优先）
+#   多音姓氏表 polyphonic
+#   android.icu Transliterator 兜底
+#
+# 匹配长度 / Match length:
+#   本表在【每个候选长度】上都会被查询，因此既能覆盖单字姓，也能覆盖复姓。
+#   Consulted at every candidate length, so it can retarget compounds as well as single chars.
+#
+# 行为 / Behaviour:
+#   * 后面的行覆盖前面的同名行 / later rows replace earlier ones
+#   * 格式错误的行会被【跳过并计数】，不会导致崩溃或联系人列表为空
+#     malformed rows are skipped and counted; they never crash or empty the contact list
+#   * 本文件默认【只有注释】，即不改变任何默认行为
+#     this file ships with comments only, i.e. it changes nothing by default
+#
+# 如何定制 / How to customise:
+#   a) 直接编辑本文件后重新编译 Contacts
+#   b) 用 RRO overlay 覆盖同名 raw 资源（推荐，无需改动本仓库）
+#      override this raw resource from a runtime resource overlay (recommended)
+#
+# =====================================================================================
+# 示例（已注释掉，取消注释即生效）/ EXAMPLES — uncomment to activate
+# =====================================================================================
+#
+# 覃 默认归类为 T（Tán），这是本项目的产品决策（见设计文档 D3）。
+# 广西壮族地区覃姓多读 Qín，如面向该地区发行，取消下面一行的注释：
+# 覃 defaults to T (Tán) per product decision D3. Guangxi deployments may prefer Qín:
+#
+#覃,Q,广西壮族地区定制包 — 覃读 Qín 而非 Tán
+#
+# 郇 默认 Huán（H）。若目标用户以河南 Xún 音为主：
+#郇,X,河南地区 — 郇读 Xún
+#
+# 贲 默认 Bēn（B）。若目标用户以 Féi 音为主：
+#贲,F,贲读 Féi
+#
+# 那 默认 Nā（N）。若需归到 Nuó：
+#那,N,那读 Nuó — 首字母不变，仅记录读音差异
+#
+# 也可以为 ICU 兜底不准的普通姓固定归类，例如：
+# You can also pin an ordinary surname whose ICU fallback is unreliable:
+#尉,W,确保单姓「尉」归 W（复姓「尉迟」仍由复姓表归 Y）
+#
+# =====================================================================================
+# 在下方追加你的定制行 / ADD YOUR OVERRIDES BELOW
+# =====================================================================================

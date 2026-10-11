@@ -1,0 +1,70 @@
+# =====================================================================================
+# 复姓表（扩展）— compound surname table (extension)
+# =====================================================================================
+#
+# 格式 / Format:
+#   surname,pinyin,initial,note
+#
+#   surname  复姓本身（两字或更多）/ the compound surname (two or more characters)
+#   pinyin   整个复姓的读音，无声调小写全拼，不加分隔
+#            reading of the WHOLE surname, toneless lowercase pinyin, no separator
+#   initial  pinyin 的首字母大写（冗余列，便于人工校对）
+#            uppercase initial of pinyin (redundant, for human review only)
+#   note     自由文本备注 / free-text note (may contain commas)
+#
+# 说明 / Notes:
+#   * 本文件是【增量】。67 条常见复姓已内建在 ChineseSurnameTable.BUILT_IN_COMPOUND 中。
+#     This file is ADDITIVE; 67 common compounds are already compiled into the class.
+#   * 复姓匹配【最长优先】，且整体优先于单字多音姓表。
+#     所以「单于」(Chányú) 一定会赢过单字「单」(Shàn)，「长孙」(Zhǎngsūn) 赢过「长」(Cháng)。
+#     Compound matching is LONGEST-FIRST and outranks the single-character table entirely.
+#   * 新增一条首字为多音字的复姓时，务必跑一次 host 单测：
+#     ChineseSurnameTable.validateBuiltInTables() 会自动检查「遮蔽」问题，无需手写用例。
+#     When adding a compound whose first char is polyphonic, run the host unit test —
+#     validateBuiltInTables() derives the shadowing check from the data itself.
+#   * 支持三字及以上复姓（如少数民族译名），解析器按码点最长匹配，无需改代码。
+#     Three-character-plus surnames are supported; the parser matches longest-first by code point.
+#
+# 内建的 67 条（此处不再重复）/ Already built in, do NOT repeat here:
+#   欧阳 司马 诸葛 上官 皇甫 令狐 尉迟 万俟 澹台 慕容 独孤 公孙 长孙 单于 乐正 宇文
+#   夏侯 东方 西门 南宫 北堂 司徒 司空 司寇 呼延 太史 端木 拓跋 赫连 钟离 闾丘 子车
+#   颛孙 壤驷 公良 漆雕 公西 巫马 仲孙 鲜于 第五 梁丘 左丘 东郭 百里 东门 南门 羊舌
+#   微生 夹谷 宰父 谷梁 段干 即墨 达奚 褚师 淳于 仉督 公冶 宗政 濮阳 申屠 公羊 轩辕
+#   仲长 叔孙 毌丘
+# =====================================================================================
+
+# ---- 《百家姓》复姓长尾 / remaining Hundred Family Surnames compounds ----
+公伯,gongbo,G,
+南荣,nanrong,N,
+东里,dongli,D,
+东宫,donggong,D,
+仲叔,zhongshu,Z,
+乐羊,yueyang,Y,乐 此处读 Yuè
+青阳,qingyang,Q,
+公孟,gongmeng,G,
+士孙,shisun,S,
+成公,chenggong,C,
+邢莫,xingmo,X,
+西乡,xixiang,X,
+南伯,nanbo,N,
+第二,dier,D,
+第三,disan,D,
+将闾,jianglv,J,
+胡母,humu,H,母 此处读 mǔ
+琴张,qinzhang,Q,
+索卢,suolu,S,
+夏丁,xiading,X,
+乌孙,wusun,W,
+库狄,kudi,K,
+万纽,wanniu,W,
+纳兰,nalan,N,满族姓氏
+叶赫,yehe,Y,满族姓氏；叶 此处读 Yè
+钮祜,niuhu,N,满族姓氏
+瓜尔,guaer,G,满族姓氏
+
+# ---- 三字复姓（少数民族译写）/ three-character surnames (transliterated) ----
+爱新觉罗,aixinjueluo,A,满族；四字，最长匹配自动处理
+叶赫那拉,yeheanala,Y,满族；四字
+钮祜禄,niuhulu,N,满族；三字
+瓜尔佳,guaerjia,G,满族；三字
+索绰罗,suochuoluo,S,满族；三字

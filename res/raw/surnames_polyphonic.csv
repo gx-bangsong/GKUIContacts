@@ -1,0 +1,72 @@
+# =====================================================================================
+# 多音姓氏表（扩展）— polyphonic surname table (extension)
+# =====================================================================================
+#
+# 格式 / Format:
+#   char,surname_pinyin,initial,common_pinyin,confidence,note
+#
+#   char           单个汉字姓氏 / the single-character surname
+#   surname_pinyin 作为姓氏时的读音，无声调小写全拼 —— 索引以此为准
+#                  the reading used AS A SURNAME, toneless lowercase pinyin; this is what we index
+#   initial        surname_pinyin 的首字母大写（冗余列，便于人工校对；解析时以 pinyin 为准）
+#                  uppercase initial of surname_pinyin (redundant, for human review only)
+#   common_pinyin  该字的日常读音，仅作注释，不参与计算
+#                  the everyday reading; documentation only, never used in matching
+#   confidence     certain | ambiguous
+#                  ambiguous = 该姓确有两种通行读音，部署方可能想改，见 surnames_override.csv
+#   note           自由文本备注 / free-text note (may contain commas)
+#
+# 说明 / Notes:
+#   * 本文件是【增量】。最高频的 30 条已内建在 ChineseSurnameTable.BUILT_IN_POLYPHONIC 中，
+#     即使本文件被裁剪掉也能工作。此处只放长尾条目，避免同一条数据维护两份。
+#     This file is ADDITIVE. The 30 highest-frequency entries are compiled into
+#     ChineseSurnameTable.BUILT_IN_POLYPHONIC so the app still works if this file is stripped.
+#     Only the long tail lives here, so no row is maintained in two places.
+#   * 同名后加载者覆盖先加载者，因此本文件也可用于修正内建条目。
+#     Later rows replace earlier ones, so this file can also correct a built-in entry.
+#   * 要改变某个姓的归类而不想动本文件，请用 surnames_override.csv（优先级更高）。
+#     To retarget a surname without touching this file, use surnames_override.csv.
+#   * '#' 开头为整行注释；空格前的 '#' 视为行尾注释。UTF-8，允许 BOM 与 CRLF。
+#     '#' starts a comment; a '#' preceded by whitespace starts a trailing comment.
+#
+# 内建的 30 条（此处不再重复）/ Already built in, do NOT repeat here:
+#   单 解 曾 仇 查 区 华 朴 乐 折 翟 覃 种 长 繁 谌 隗 郗 牟 员
+#   都 乜 逢 莘 盖 缪 阚 纪 任 尉
+# =====================================================================================
+
+# ---- 首字母会改变的（影响最大，优先校对）/ entries that MOVE the contact between buckets ----
+句,gou,G,ju,certain,句姓读 Gōu — J→G
+秘,bi,B,mi,certain,秘姓读 Bì — M→B
+召,shao,S,zhao,certain,召姓读 Shào — Z→S
+佴,nai,N,er,certain,佴姓读 Nài — E→N
+车,che,C,ju,certain,车姓读 Chē — 棋子「车 jū」不是姓
+强,qiang,Q,jiang,certain,强姓读 Qiáng — J→Q
+郇,huan,H,xun,ambiguous,郇 Huán(山西)/Xún(河南) — 默认 Huán；X→H
+贲,ben,B,fei,ambiguous,贲 Bēn/Féi 均有 — 默认 Bēn；F→B
+逄,pang,P,feng,certain,逄姓读 Páng — 注意此字非「逢」；F→P
+洗,xian,X,xi,certain,洗姓读 Xiǎn（多见于广东）— 与「冼」同源
+亓,qi,Q,ji,certain,亓姓读 Qí
+
+# ---- 首字母不变，但读音必须正确（供气泡/分节头显示，且防止误落 ICU 兜底）----
+# ---- same initial, but the reading must still be right for the bubble and section header ----
+沈,shen,S,chen,certain,沈姓读 Shěn — 繁体「瀋」才读 Chén
+过,guo,G,guo,certain,过姓读 Guō（阴平）
+应,ying,Y,ying,certain,应姓读 Yīng（阴平）
+燕,yan,Y,yan,certain,燕姓读 Yān（阴平）
+於,yu,Y,yu,certain,於姓读 Yū
+那,na,N,na,ambiguous,那 Nā(满族)/Nuó 均有 — 默认 Nā
+相,xiang,X,xiang,certain,相姓读 Xiàng
+隽,juan,J,jun,certain,隽姓读 Juàn
+宿,su,S,xiu,certain,宿姓读 Sù
+薄,bo,B,bao,certain,薄姓读 Bó
+卜,bu,B,bo,certain,卜姓读 Bǔ
+訾,zi,Z,zi,certain,訾姓读 Zī
+曲,qu,Q,qu,certain,曲姓读 Qū（阴平）
+谷,gu,G,gu,certain,谷姓读 Gǔ
+
+# ---- 防御性条目：这些字单独作姓时的读音，与它们开头的复姓不同 ----
+# ---- defensive: the bare character reads differently from the compound surname it starts ----
+# ---- 复姓表优先级更高，所以「万俟」仍会正确匹配为 Mòqí；这里只兜住「万」单姓 ----
+万,wan,W,mo,certain,★防御：单姓「万」读 Wàn；只有复姓「万俟」才读 Mòqí
+澹,dan,D,tan,certain,★防御：单姓「澹」读 Dàn；只有复姓「澹台」才读 Tántái
+鲜,xian,X,xian,certain,★防御：单姓「鲜」读 Xiān；复姓「鲜于」由复姓表处理

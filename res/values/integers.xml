@@ -52,4 +52,8 @@
 
     <!-- Duration of the animations when a contact list loads. -->
     <integer name="lists_on_load_animation_duration">190</integer>
+
+    <!-- Fade-out duration of the fast-scroll surname bubble, in milliseconds -->
+    <integer name="surname_index_bubble_fade_duration">200</integer>
+
 </resources>
