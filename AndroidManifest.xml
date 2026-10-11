@@ -270,6 +270,20 @@
             android:label="@string/activity_title_licenses"
             android:theme="@style/ContactsPreferencesTheme"/>
 
+        <!-- Shows the information of the company a contact works for -->
+        <activity
+            android:name=".activities.CompanyInfoActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:label="@string/company_info_activity_title"
+            android:theme="@android:style/Theme.Material.Light.DarkActionBar">
+            <intent-filter>
+                <action android:name="com.android.contacts.action.SHOW_COMPANY_INFO" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <!-- Used to filter contacts list by account -->
         <activity
             android:name=".list.AccountFilterActivity"

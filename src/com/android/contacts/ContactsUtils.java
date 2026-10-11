@@ -30,6 +30,7 @@ import android.util.Pair;
 import com.android.contacts.compat.ContactsCompat;
 import com.android.contacts.compat.DirectoryCompat;
 import com.android.contacts.model.dataitem.ImDataItem;
+import com.android.contacts.util.ImProtocolUtils;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -217,8 +218,16 @@ public class ContactsUtils {
                     new Intent(Intent.ACTION_SENDTO, Uri.parse("xmpp:" + data + "?message"));
             }
         } else {
-            // Build an IM Intent
-            intent = getCustomImIntent(im, protocol);
+            if (protocol == Im.PROTOCOL_CUSTOM) {
+                // Modern services (WeChat, DingTalk, Telegram, ...) have no dedicated protocol
+                // value. Try to open the matching application (or the account inside it) first.
+                intent = ImProtocolUtils.buildOpenAppIntent(
+                        context, im.getCustomProtocol(), im.getData());
+            }
+            if (intent == null) {
+                // Build a generic IM Intent
+                intent = getCustomImIntent(im, protocol);
+            }
         }
         return new Pair<>(intent, secondaryIntent);
     }
